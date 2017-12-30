@@ -3,6 +3,7 @@
 
 import os
 from os import system
+from os import popen
 import sys
 
 if len(sys.argv) != 4:
@@ -92,7 +93,14 @@ system('cp %s/* ctf_xinetd/bin/'%sys.argv[1])
 system('chmod +x ctf_xinetd/bin/%s'%sys.argv[1])
 system('chmod +x ctf_xinetd/start.sh')
 
-system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
+if popen("sudo docker images -q %s" % sys.argv[1]).read() == '':
+	system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
+else:
+	if_rm = raw_input("image already exist ,remove or just run it ?[rm/run]\n")
+	if if_rm == 'rm':
+		system('sudo docker stop $(sudo docker ps -aq --filter "name=%s")' % sys.argv[1])
+		system('sudo docker rm $(sudo docker ps -aq --filter "name=%s")' % sys.argv[1])
+		system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
 
 system('sudo docker run -d -p "0.0.0.0:%s:9999" -h "%s" --name="%s" %s'%(sys.argv[2],sys.argv[1],sys.argv[1],sys.argv[1]))
 
