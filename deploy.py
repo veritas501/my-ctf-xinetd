@@ -5,10 +5,10 @@ import os
 from os import system
 from os import popen
 import sys
-
+from time import sleep
 if len(sys.argv) != 4:
-	print 'usage: %s ProjectPath ExposePort LinuxVersion' % sys.argv[0]
-	exit(0)
+    print 'usage: %s ProjectPath ExposePort LinuxVersion' % sys.argv[0]
+    exit(0)
 
 dockerfile='''FROM %s
 
@@ -73,8 +73,8 @@ ctf_xinetd='''service ctf
     server_args = --userspec=1000:1000 /home/ctf ./%s
     banner_fail = /etc/banner_fail
     # safety options
-    per_source	= 10 # the maximum instances of this service per source IP address
-    rlimit_cpu	= 20 # the maximum number of CPU seconds that the service may use
+    per_source    = 10 # the maximum instances of this service per source IP address
+    rlimit_cpu    = 20 # the maximum number of CPU seconds that the service may use
     #rlimit_as  = 1024M # the Address Space resource limit for the service
     #access_times = 2:00-9:00 12:00-24:00
 }
@@ -94,14 +94,16 @@ system('chmod +x ctf_xinetd/bin/%s'%sys.argv[1])
 system('chmod +x ctf_xinetd/start.sh')
 
 if popen("sudo docker images -q %s" % sys.argv[1]).read() == '':
-	system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
+    system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
 else:
-	if_rm = raw_input("image already exist ,remove or just run it ?[rm/run]\n")
-	if if_rm == 'rm':
-		system('sudo docker stop $(sudo docker ps -aq --filter "name=%s")' % sys.argv[1])
-		system('sudo docker rm $(sudo docker ps -aq --filter "name=%s")' % sys.argv[1])
-		system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
+    if_rm = raw_input("\033[0;31mimage already exist, remove or just run it ?[rm/run]\n\033[0m")
+    system('sudo docker stop $(sudo docker ps -aq --filter "name=%s")' % sys.argv[1])
+    system('sudo docker rm $(sudo docker ps -aq --filter "name=%s")' % sys.argv[1])
+    if if_rm == 'rm':
+        system('sudo docker rmi $(sudo docker images -q %s)' % sys.argv[1])
+        system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
 
+sleep(1)
 system('sudo docker run -d -p "0.0.0.0:%s:9999" -h "%s" --name="%s" %s'%(sys.argv[2],sys.argv[1],sys.argv[1],sys.argv[1]))
 
 
@@ -110,10 +112,10 @@ system('mkdir libc')
 system('sudo docker cp --follow-link %s:lib/x86_64-linux-gnu/libc.so.6 libc/libc64.so'%sys.argv[1])
 system('sudo docker cp --follow-link %s:lib32/libc.so.6 libc/libc32.so'%sys.argv[1])
 
-print '''
+print '''\033[0;32m
 ============================
 ||  [+] Deploy finish :)  ||
 ============================
 
-try nc 0.0.0.0 %s
+try nc 0.0.0.0 %s\033[0m
 '''%sys.argv[2]
