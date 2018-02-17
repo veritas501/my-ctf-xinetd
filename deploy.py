@@ -6,8 +6,8 @@ from os import system
 from os import popen
 import sys
 from time import sleep
-if len(sys.argv) != 4:
-    print 'usage: %s ProjectPath ExposePort LinuxVersion' % sys.argv[0]
+if (len(sys.argv) != 4) and (len(sys.argv) != 5):
+    print 'usage: %s ProjectPath ExposePort LinuxVersion [timeout(120 for default, 0 to cancel timeout)]' % sys.argv[0]
     exit(0)
 
 dockerfile='''FROM %s
@@ -42,6 +42,7 @@ RUN mkdir /home/ctf/bin
 RUN cp /bin/sh /home/ctf/bin
 RUN cp /bin/ls /home/ctf/bin
 RUN cp /bin/cat /home/ctf/bin
+RUN cp /usr/bin/timeout /home/ctf/bin
 
 WORKDIR /home/ctf
 
@@ -70,15 +71,37 @@ ctf_xinetd='''service ctf
     bind        = 0.0.0.0
     server      = /usr/sbin/chroot
     # replace helloworld to your program
-    server_args = --userspec=1000:1000 /home/ctf ./%s
+    server_args = --userspec=1000:1000 /home/ctf ./run.sh
     banner_fail = /etc/banner_fail
     # safety options
-    per_source    = 10 # the maximum instances of this service per source IP address
-    rlimit_cpu    = 20 # the maximum number of CPU seconds that the service may use
+    per_source    = 5 # the maximum instances of this service per source IP address
+    rlimit_cpu    = 3 # the maximum number of CPU seconds that the service may use
     #rlimit_as  = 1024M # the Address Space resource limit for the service
     #access_times = 2:00-9:00 12:00-24:00
 }
+'''
+
+timeout = 120
+
+if len(sys.argv) == 5:
+	timeout = int(sys.argv[4])
+
+if timeout == 0:
+	runsh='''
+#!/bin/sh
+#
+exec 2>/dev/null
+./%s
 ''' % sys.argv[1]
+else:
+	runsh='''
+#!/bin/sh
+#
+exec 2>/dev/null
+timeout %d ./%s
+echo '\\033[0;31mtimeout!!\\033[0m'
+''' % (timeout,sys.argv[1])
+
 
 system('rm -rf ctf_xinetd')
 system('rm -rf libc')
@@ -88,9 +111,11 @@ system('mkdir ctf_xinetd/bin')
 open('ctf_xinetd/Dockerfile','w').write(dockerfile)
 open('ctf_xinetd/ctf.xinetd','w').write(ctf_xinetd)
 open('ctf_xinetd/start.sh','w').write(startsh)
+open('ctf_xinetd/bin/run.sh','w').write(runsh)
 
 system('cp %s/* ctf_xinetd/bin/'%sys.argv[1])
 system('chmod +x ctf_xinetd/bin/%s'%sys.argv[1])
+system('chmod +x ctf_xinetd/bin/run.sh')
 system('chmod +x ctf_xinetd/start.sh')
 
 if popen("sudo docker images -q %s" % sys.argv[1]).read() == '':
@@ -104,7 +129,7 @@ else:
         system('sudo docker build -t "%s" ./ctf_xinetd'%sys.argv[1])
 
 sleep(1)
-system('sudo docker run -d -p "0.0.0.0:%s:9999" -h "%s" --name="%s" %s'%(sys.argv[2],sys.argv[1],sys.argv[1],sys.argv[1]))
+system('sudo docker run --ulimit nproc=1024:2048 -d -p "0.0.0.0:%s:9999" -h "%s" --name="%s" %s'%(sys.argv[2],sys.argv[1],sys.argv[1],sys.argv[1]))
 
 
 ######
@@ -117,5 +142,5 @@ print '''\033[0;32m
 ||  [+] Deploy finish :)  ||
 ============================
 
-try nc 0.0.0.0 %s\033[0m
+try nc 0 %s\033[0m
 '''%sys.argv[2]

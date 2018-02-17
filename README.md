@@ -27,8 +27,10 @@ fast deploy pwn , using docker &amp; ctf_xinted
 当前目录执行命令：
 
 ```
-#usage: ./deploy.py ProjectPath ExposePort LinuxVersion
+#usage: ./deploy.py ProjectPath ExposePort LinuxVersion [timeout(120 for default, 0 to cancel timeout)]
 ./deploy.py pwn1 10001 ubuntu:16.04
+./deploy.py pwn1 10001 ubuntu:16.04 60
+./deploy.py pwn1 10001 ubuntu:16.04 0
 ```
 
 ---
