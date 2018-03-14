@@ -12,7 +12,7 @@ if (len(sys.argv) != 4) and (len(sys.argv) != 5):
 
 dockerfile='''FROM %s
 
-RUN sed -i "s/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn/g" /etc/apt/sources.list
+RUN sed -i "s/http:\/\/archive.ubuntu.com/http:\/\/mirrors.163.com/g" /etc/apt/sources.list
 RUN apt-get update && apt-get -y dist-upgrade
 RUN apt-get install -y lib32z1 xinetd
 
@@ -99,7 +99,6 @@ else:
 #
 exec 2>/dev/null
 timeout %d ./%s
-echo '\\033[0;31mtimeout!!\\033[0m'
 ''' % (timeout,sys.argv[1])
 
 
