@@ -13,6 +13,7 @@ if (len(sys.argv) != 4) and (len(sys.argv) != 5):
 dockerfile='''FROM %s
 
 RUN sed -i "s/http:\/\/archive.ubuntu.com/http:\/\/mirrors.163.com/g" /etc/apt/sources.list
+RUN sed -i "s/http:\/\/security.ubuntu.com/http:\/\/mirrors.163.com/g" /etc/apt/sources.list
 RUN apt-get update && apt-get -y dist-upgrade
 RUN apt-get install -y lib32z1 xinetd
 
@@ -70,7 +71,6 @@ ctf_xinetd='''service ctf
     port        = 9999
     bind        = 0.0.0.0
     server      = /usr/sbin/chroot
-    # replace helloworld to your program
     server_args = --userspec=1000:1000 /home/ctf ./run.sh
     banner_fail = /etc/banner_fail
     # safety options
